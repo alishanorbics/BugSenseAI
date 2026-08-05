@@ -17,6 +17,20 @@ const VALID_STATUS_TRANSITIONS = {
 
 const isValidObjectId = (id) => mongoose.isValidObjectId(id);
 
+const findOwnedBug = async (bug_id, decoded_id, action_label) => {
+  const bug = await Bug.findById(bug_id).populate('project');
+
+  if (!bug) {
+    return { error: { status: 404, message: 'Bug not found.' } };
+  }
+
+  if (bug.project.created_by.toString() !== decoded_id) {
+    return { error: { status: 403, message: `You do not have permission to ${action_label} this bug.` } };
+  }
+
+  return { bug };
+};
+
 const createBug = async (req, res, next) => {
   try {
     if (req.decoded.role !== ROLES.QA_ENGINEER) {
@@ -284,10 +298,144 @@ const updateBugStatus = async (req, res, next) => {
   }
 };
 
+const verifyBug = async (req, res, next) => {
+  try {
+    if (req.decoded.role !== ROLES.QA_ENGINEER) {
+      return res.status(403).json({ success: false, message: 'Only QA Engineers can verify bugs.' });
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid bug ID.' });
+    }
+
+    const { bug, error } = await findOwnedBug(id, req.decoded.id, 'verify');
+
+    if (error) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+
+    if (bug.status !== BUG_STATUS.FIXED) {
+      return res
+        .status(400)
+        .json({ success: false, message: `Cannot verify a bug with status ${bug.status}.` });
+    }
+
+    bug.status = BUG_STATUS.VERIFIED;
+    await bug.save();
+
+    const updated_bug = await Bug.findById(id)
+      .populate('created_by', MEMBER_FIELDS)
+      .populate('assignee', MEMBER_FIELDS)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Bug verified successfully.',
+      data: updated_bug,
+    });
+  } catch (error) {
+    logger.error(`Verify Bug Error: ${error.message}`);
+    return next(error);
+  }
+};
+
+const closeBug = async (req, res, next) => {
+  try {
+    if (req.decoded.role !== ROLES.QA_ENGINEER) {
+      return res.status(403).json({ success: false, message: 'Only QA Engineers can close bugs.' });
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid bug ID.' });
+    }
+
+    const { bug, error } = await findOwnedBug(id, req.decoded.id, 'close');
+
+    if (error) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+
+    if (bug.status !== BUG_STATUS.VERIFIED) {
+      return res
+        .status(400)
+        .json({ success: false, message: `Cannot close a bug with status ${bug.status}.` });
+    }
+
+    bug.status = BUG_STATUS.CLOSED;
+    await bug.save();
+
+    const updated_bug = await Bug.findById(id)
+      .populate('created_by', MEMBER_FIELDS)
+      .populate('assignee', MEMBER_FIELDS)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Bug closed successfully.',
+      data: updated_bug,
+    });
+  } catch (error) {
+    logger.error(`Close Bug Error: ${error.message}`);
+    return next(error);
+  }
+};
+
+const reopenBug = async (req, res, next) => {
+  try {
+    if (req.decoded.role !== ROLES.QA_ENGINEER) {
+      return res.status(403).json({ success: false, message: 'Only QA Engineers can reopen bugs.' });
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid bug ID.' });
+    }
+
+    const { bug, error } = await findOwnedBug(id, req.decoded.id, 'reopen');
+
+    if (error) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+
+    if (bug.status !== BUG_STATUS.FIXED) {
+      return res
+        .status(400)
+        .json({ success: false, message: `Cannot reopen a bug with status ${bug.status}.` });
+    }
+
+    // Assignee is intentionally retained so the same Developer can re-enter the
+    // in_progress/fixed flow directly, rather than requiring QA to reassign.
+    bug.status = BUG_STATUS.REOPENED;
+    await bug.save();
+
+    const updated_bug = await Bug.findById(id)
+      .populate('created_by', MEMBER_FIELDS)
+      .populate('assignee', MEMBER_FIELDS)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Bug reopened successfully.',
+      data: updated_bug,
+    });
+  } catch (error) {
+    logger.error(`Reopen Bug Error: ${error.message}`);
+    return next(error);
+  }
+};
+
 module.exports = {
   createBug,
   listBugs,
   getBug,
   assignBug,
   updateBugStatus,
+  verifyBug,
+  closeBug,
+  reopenBug,
 };

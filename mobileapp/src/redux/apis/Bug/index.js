@@ -53,6 +53,36 @@ const bugApi = baseApi.injectEndpoints({
         { type: 'Bug', id: `LIST-${project_id}` },
       ],
     }),
+    verifyBug: builder.mutation({
+      query: ({ project_id, id }) => ({
+        url: `/projects/${project_id}/bugs/${id}/verify`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, { project_id, id }) => [
+        { type: 'Bug', id },
+        { type: 'Bug', id: `LIST-${project_id}` },
+      ],
+    }),
+    closeBug: builder.mutation({
+      query: ({ project_id, id }) => ({
+        url: `/projects/${project_id}/bugs/${id}/close`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, { project_id, id }) => [
+        { type: 'Bug', id },
+        { type: 'Bug', id: `LIST-${project_id}` },
+      ],
+    }),
+    reopenBug: builder.mutation({
+      query: ({ project_id, id }) => ({
+        url: `/projects/${project_id}/bugs/${id}/reopen`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, { project_id, id }) => [
+        { type: 'Bug', id },
+        { type: 'Bug', id: `LIST-${project_id}` },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -63,4 +93,7 @@ export const {
   useCreateBugMutation,
   useAssignBugMutation,
   useUpdateBugStatusMutation,
+  useVerifyBugMutation,
+  useCloseBugMutation,
+  useReopenBugMutation,
 } = bugApi;

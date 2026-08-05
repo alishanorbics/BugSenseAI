@@ -12,6 +12,9 @@ router.get('/', bugController.listBugs);
 router.get('/:id', bugController.getBug);
 router.patch('/:id/assign', validator(assignBugSchema), bugController.assignBug);
 router.patch('/:id/status', validator(updateBugStatusSchema), bugController.updateBugStatus);
+router.patch('/:id/verify', bugController.verifyBug);
+router.patch('/:id/close', bugController.closeBug);
+router.patch('/:id/reopen', bugController.reopenBug);
 router.use('/:id/comments', commentRoutes);
 
 module.exports = router;

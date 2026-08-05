@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { BUG_STATUS, ROLES } from '../../../helpers/data';
-import { useAssignBugMutation, useGetBugQuery, useUpdateBugStatusMutation } from '../../../redux/apis/Bug';
+import {
+  useAssignBugMutation,
+  useCloseBugMutation,
+  useGetBugQuery,
+  useReopenBugMutation,
+  useUpdateBugStatusMutation,
+  useVerifyBugMutation,
+} from '../../../redux/apis/Bug';
 import { useCreateCommentMutation, useListCommentsQuery } from '../../../redux/apis/Comment';
 import { useListMembersQuery } from '../../../redux/apis/Project';
 import { selectUser } from '../../../redux/selectors';
@@ -25,6 +32,8 @@ const useBugDetailController = () => {
   const is_creator = is_qa && bug?.project?.created_by === user?.id;
   const is_assignee = is_developer && bug?.assignee?._id === user?.id;
   const can_assign = is_creator && bug?.status === BUG_STATUS.CREATED;
+  const can_verify_or_reopen = is_creator && bug?.status === BUG_STATUS.FIXED;
+  const can_close = is_creator && bug?.status === BUG_STATUS.VERIFIED;
 
   const { data: members_result } = useListMembersQuery(project_id, { skip: !can_assign });
   const developers = (members_result?.data || []).filter((member) => member.role === ROLES.DEVELOPER);
@@ -46,6 +55,14 @@ const useBugDetailController = () => {
 
   const startProgress = () => updateBugStatus({ project_id, id: bug_id, status: BUG_STATUS.IN_PROGRESS });
   const markFixed = () => updateBugStatus({ project_id, id: bug_id, status: BUG_STATUS.FIXED });
+
+  const [verifyBug, { isLoading: is_verifying }] = useVerifyBugMutation();
+  const [closeBug, { isLoading: is_closing }] = useCloseBugMutation();
+  const [reopenBug, { isLoading: is_reopening }] = useReopenBugMutation();
+
+  const verifyFix = () => verifyBug({ project_id, id: bug_id });
+  const closeThisBug = () => closeBug({ project_id, id: bug_id });
+  const rejectAndReopen = () => reopenBug({ project_id, id: bug_id });
 
   const { data: comments_result, isLoading: is_comments_loading } = useListCommentsQuery(
     { project_id, bug_id },
@@ -77,6 +94,11 @@ const useBugDetailController = () => {
       is_assigning,
       is_assignee,
       is_updating_status,
+      can_verify_or_reopen,
+      can_close,
+      is_verifying,
+      is_closing,
+      is_reopening,
       comments,
       is_comments_loading,
       comment_text,
@@ -87,6 +109,9 @@ const useBugDetailController = () => {
       confirmAssignment,
       startProgress,
       markFixed,
+      verifyFix,
+      closeThisBug,
+      rejectAndReopen,
       setCommentText,
       submitComment,
     },
