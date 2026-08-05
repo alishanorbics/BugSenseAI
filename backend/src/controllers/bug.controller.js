@@ -3,6 +3,7 @@ const Bug = require('../models/bug.model');
 const Project = require('../models/project.model');
 const logger = require('../config/logger');
 const { buildPaginationResponse } = require('../helpers/pagination');
+const { generateBugAnalysis } = require('../helpers/gemini');
 const { BUG_STATUS, ROLES, hasProjectAccess } = require('../utils');
 
 const MEMBER_FIELDS = 'name email role';
@@ -40,6 +41,8 @@ const createBug = async (req, res, next) => {
       original_name: file.originalname,
     }));
 
+    const ai_analysis = await generateBugAnalysis({ title, description, reproduction_steps, severity });
+
     const bug = await Bug.create({
       project: project_id,
       title,
@@ -49,6 +52,7 @@ const createBug = async (req, res, next) => {
       attachments,
       created_by: req.decoded.id,
       status: BUG_STATUS.CREATED,
+      ...(ai_analysis ? { ai_analysis } : {}),
     });
 
     return res.status(201).json({
