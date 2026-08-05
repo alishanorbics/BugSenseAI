@@ -4,8 +4,8 @@ const ENV = {
     FILE_BASE_URL: 'http://localhost:5050',
   },
   production: {
-    API_BASE_URL: 'https://api.bugsense.app/api',
-    FILE_BASE_URL: 'https://api.bugsense.app',
+    API_BASE_URL: 'https://bugsense-backend-production.up.railway.app/api',
+    FILE_BASE_URL: 'https://bugsense-backend-production.up.railway.app',
   },
 };
 
