@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { BUG_SEVERITY, ROLES } = require('../utils');
+const { BUG_SEVERITY, BUG_STATUS, ROLES } = require('../utils');
 
 const registerSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).required().messages({
@@ -160,6 +160,24 @@ const createBugSchema = Joi.object({
     }),
 });
 
+const assignBugSchema = Joi.object({
+  developer_id: Joi.string().trim().required().messages({
+    'string.empty': 'Developer is required.',
+    'any.required': 'Developer is required.',
+  }),
+});
+
+const updateBugStatusSchema = Joi.object({
+  status: Joi.string()
+    .valid(...Object.values(BUG_STATUS))
+    .required()
+    .messages({
+      'any.only': 'Invalid status value.',
+      'string.empty': 'Status is required.',
+      'any.required': 'Status is required.',
+    }),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -170,4 +188,6 @@ module.exports = {
   updateProjectSchema,
   addMemberSchema,
   createBugSchema,
+  assignBugSchema,
+  updateBugStatusSchema,
 };

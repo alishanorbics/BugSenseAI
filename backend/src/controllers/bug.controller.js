@@ -1,12 +1,19 @@
 const mongoose = require('mongoose');
 const Bug = require('../models/bug.model');
 const Project = require('../models/project.model');
+const User = require('../models/user.model');
 const logger = require('../config/logger');
 const { buildPaginationResponse } = require('../helpers/pagination');
 const { generateBugAnalysis } = require('../helpers/gemini');
 const { BUG_STATUS, ROLES, hasProjectAccess } = require('../utils');
 
 const MEMBER_FIELDS = 'name email role';
+
+const VALID_STATUS_TRANSITIONS = {
+  [BUG_STATUS.ASSIGNED]: [BUG_STATUS.IN_PROGRESS],
+  [BUG_STATUS.IN_PROGRESS]: [BUG_STATUS.FIXED],
+  [BUG_STATUS.REOPENED]: [BUG_STATUS.IN_PROGRESS],
+};
 
 const isValidObjectId = (id) => mongoose.isValidObjectId(id);
 
@@ -154,8 +161,133 @@ const getBug = async (req, res, next) => {
   }
 };
 
+const assignBug = async (req, res, next) => {
+  try {
+    if (req.decoded.role !== ROLES.QA_ENGINEER) {
+      return res.status(403).json({ success: false, message: 'Only QA Engineers can assign bugs.' });
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid bug ID.' });
+    }
+
+    const { developer_id } = req.body;
+
+    if (!isValidObjectId(developer_id)) {
+      return res.status(400).json({ success: false, message: 'Invalid developer ID.' });
+    }
+
+    const bug = await Bug.findById(id).populate('project');
+
+    if (!bug) {
+      return res.status(404).json({ success: false, message: 'Bug not found.' });
+    }
+
+    if (bug.project.created_by.toString() !== req.decoded.id) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'You do not have permission to assign this bug.' });
+    }
+
+    if (bug.status !== BUG_STATUS.CREATED) {
+      return res.status(400).json({ success: false, message: 'This bug has already been assigned.' });
+    }
+
+    const is_project_member = bug.project.members.some(
+      (member_id) => member_id.toString() === developer_id,
+    );
+
+    if (!is_project_member) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'This developer is not a member of the project.' });
+    }
+
+    const developer = await User.findById(developer_id);
+
+    if (!developer || developer.role !== ROLES.DEVELOPER) {
+      return res.status(400).json({ success: false, message: 'The selected user is not a Developer.' });
+    }
+
+    bug.assignee = developer_id;
+    bug.status = BUG_STATUS.ASSIGNED;
+    await bug.save();
+
+    const updated_bug = await Bug.findById(id)
+      .populate('created_by', MEMBER_FIELDS)
+      .populate('assignee', MEMBER_FIELDS)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Bug assigned successfully.',
+      data: updated_bug,
+    });
+  } catch (error) {
+    logger.error(`Assign Bug Error: ${error.message}`);
+    return next(error);
+  }
+};
+
+const updateBugStatus = async (req, res, next) => {
+  try {
+    if (req.decoded.role !== ROLES.DEVELOPER) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Only the assigned Developer can update bug status.' });
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid bug ID.' });
+    }
+
+    const { status } = req.body;
+
+    const bug = await Bug.findById(id);
+
+    if (!bug) {
+      return res.status(404).json({ success: false, message: 'Bug not found.' });
+    }
+
+    if (!bug.assignee || bug.assignee.toString() !== req.decoded.id) {
+      return res.status(403).json({ success: false, message: 'You are not assigned to this bug.' });
+    }
+
+    const allowed_next_statuses = VALID_STATUS_TRANSITIONS[bug.status] || [];
+
+    if (!allowed_next_statuses.includes(status)) {
+      return res
+        .status(400)
+        .json({ success: false, message: `Cannot change status from ${bug.status} to ${status}.` });
+    }
+
+    bug.status = status;
+    await bug.save();
+
+    const updated_bug = await Bug.findById(id)
+      .populate('created_by', MEMBER_FIELDS)
+      .populate('assignee', MEMBER_FIELDS)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Bug status updated successfully.',
+      data: updated_bug,
+    });
+  } catch (error) {
+    logger.error(`Update Bug Status Error: ${error.message}`);
+    return next(error);
+  }
+};
+
 module.exports = {
   createBug,
   listBugs,
   getBug,
+  assignBug,
+  updateBugStatus,
 };

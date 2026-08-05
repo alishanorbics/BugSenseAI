@@ -22,4 +22,14 @@ export const SEVERITY_OPTIONS = [
   { label: 'Critical', value: BUG_SEVERITY.CRITICAL },
 ];
 
-export default { ROLES, ROLE_OPTIONS, BUG_SEVERITY, SEVERITY_OPTIONS };
+export const BUG_STATUS = {
+  CREATED: 'created',
+  ASSIGNED: 'assigned',
+  IN_PROGRESS: 'in_progress',
+  FIXED: 'fixed',
+  VERIFIED: 'verified',
+  CLOSED: 'closed',
+  REOPENED: 'reopened',
+};
+
+export default { ROLES, ROLE_OPTIONS, BUG_SEVERITY, SEVERITY_OPTIONS, BUG_STATUS };

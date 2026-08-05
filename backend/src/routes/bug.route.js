@@ -2,12 +2,14 @@ const express = require('express');
 const bugController = require('../controllers/bug.controller');
 const upload = require('../middleware/upload.middleware');
 const validator = require('../middleware/validator');
-const { createBugSchema } = require('../helpers/validators');
+const { createBugSchema, assignBugSchema, updateBugStatusSchema } = require('../helpers/validators');
 
 const router = express.Router({ mergeParams: true });
 
 router.post('/', upload.array('attachments', 5), validator(createBugSchema), bugController.createBug);
 router.get('/', bugController.listBugs);
 router.get('/:id', bugController.getBug);
+router.patch('/:id/assign', validator(assignBugSchema), bugController.assignBug);
+router.patch('/:id/status', validator(updateBugStatusSchema), bugController.updateBugStatus);
 
 module.exports = router;

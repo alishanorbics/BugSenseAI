@@ -31,8 +31,36 @@ const bugApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { project_id }) => [{ type: 'Bug', id: `LIST-${project_id}` }],
     }),
+    assignBug: builder.mutation({
+      query: ({ project_id, id, developer_id }) => ({
+        url: `/projects/${project_id}/bugs/${id}/assign`,
+        method: 'PATCH',
+        body: { developer_id },
+      }),
+      invalidatesTags: (result, error, { project_id, id }) => [
+        { type: 'Bug', id },
+        { type: 'Bug', id: `LIST-${project_id}` },
+      ],
+    }),
+    updateBugStatus: builder.mutation({
+      query: ({ project_id, id, status }) => ({
+        url: `/projects/${project_id}/bugs/${id}/status`,
+        method: 'PATCH',
+        body: { status },
+      }),
+      invalidatesTags: (result, error, { project_id, id }) => [
+        { type: 'Bug', id },
+        { type: 'Bug', id: `LIST-${project_id}` },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useListBugsQuery, useGetBugQuery, useCreateBugMutation } = bugApi;
+export const {
+  useListBugsQuery,
+  useGetBugQuery,
+  useCreateBugMutation,
+  useAssignBugMutation,
+  useUpdateBugStatusMutation,
+} = bugApi;
