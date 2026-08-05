@@ -3,6 +3,7 @@ import { useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { BUG_STATUS, ROLES } from '../../../helpers/data';
 import { useAssignBugMutation, useGetBugQuery, useUpdateBugStatusMutation } from '../../../redux/apis/Bug';
+import { useCreateCommentMutation, useListCommentsQuery } from '../../../redux/apis/Comment';
 import { useListMembersQuery } from '../../../redux/apis/Project';
 import { selectUser } from '../../../redux/selectors';
 
@@ -11,6 +12,7 @@ const useBugDetailController = () => {
   const { project_id, bug_id } = route.params || {};
   const user = useSelector(selectUser);
   const [selected_developer_id, setSelectedDeveloperId] = useState(null);
+  const [comment_text, setCommentText] = useState('');
 
   const { data: result, isLoading } = useGetBugQuery(
     { project_id, id: bug_id },
@@ -45,6 +47,26 @@ const useBugDetailController = () => {
   const startProgress = () => updateBugStatus({ project_id, id: bug_id, status: BUG_STATUS.IN_PROGRESS });
   const markFixed = () => updateBugStatus({ project_id, id: bug_id, status: BUG_STATUS.FIXED });
 
+  const { data: comments_result, isLoading: is_comments_loading } = useListCommentsQuery(
+    { project_id, bug_id },
+    { skip: !project_id || !bug_id },
+  );
+  const comments = comments_result?.data || [];
+
+  const [createComment, { isLoading: is_commenting }] = useCreateCommentMutation();
+
+  const submitComment = async () => {
+    if (!comment_text.trim()) {
+      return;
+    }
+
+    const response = await createComment({ project_id, bug_id, text: comment_text.trim() });
+
+    if (response?.data?.success) {
+      setCommentText('');
+    }
+  };
+
   return {
     values: {
       bug,
@@ -55,12 +77,18 @@ const useBugDetailController = () => {
       is_assigning,
       is_assignee,
       is_updating_status,
+      comments,
+      is_comments_loading,
+      comment_text,
+      is_commenting,
     },
     functions: {
       setSelectedDeveloperId,
       confirmAssignment,
       startProgress,
       markFixed,
+      setCommentText,
+      submitComment,
     },
   };
 };

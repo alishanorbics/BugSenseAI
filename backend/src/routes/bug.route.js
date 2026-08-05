@@ -1,5 +1,6 @@
 const express = require('express');
 const bugController = require('../controllers/bug.controller');
+const commentRoutes = require('./comment.route');
 const upload = require('../middleware/upload.middleware');
 const validator = require('../middleware/validator');
 const { createBugSchema, assignBugSchema, updateBugStatusSchema } = require('../helpers/validators');
@@ -11,5 +12,6 @@ router.get('/', bugController.listBugs);
 router.get('/:id', bugController.getBug);
 router.patch('/:id/assign', validator(assignBugSchema), bugController.assignBug);
 router.patch('/:id/status', validator(updateBugStatusSchema), bugController.updateBugStatus);
+router.use('/:id/comments', commentRoutes);
 
 module.exports = router;

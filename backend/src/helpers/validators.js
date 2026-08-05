@@ -178,6 +178,14 @@ const updateBugStatusSchema = Joi.object({
     }),
 });
 
+const createCommentSchema = Joi.object({
+  text: Joi.string().trim().min(1).max(2000).required().messages({
+    'string.empty': 'Comment text is required.',
+    'string.max': 'Comment must not exceed 2000 characters.',
+    'any.required': 'Comment text is required.',
+  }),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -190,4 +198,5 @@ module.exports = {
   createBugSchema,
   assignBugSchema,
   updateBugStatusSchema,
+  createCommentSchema,
 };
