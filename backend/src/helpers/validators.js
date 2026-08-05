@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { ROLES } = require('../utils');
+const { BUG_SEVERITY, ROLES } = require('../utils');
 
 const registerSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).required().messages({
@@ -134,6 +134,32 @@ const addMemberSchema = Joi.object({
     }),
 });
 
+const createBugSchema = Joi.object({
+  title: Joi.string().trim().min(3).max(200).required().messages({
+    'string.empty': 'Title is required.',
+    'string.min': 'Title must be at least 3 characters long.',
+    'string.max': 'Title must not exceed 200 characters.',
+    'any.required': 'Title is required.',
+  }),
+  description: Joi.string().trim().min(3).max(5000).required().messages({
+    'string.empty': 'Description is required.',
+    'string.min': 'Description must be at least 3 characters long.',
+    'string.max': 'Description must not exceed 5000 characters.',
+    'any.required': 'Description is required.',
+  }),
+  reproduction_steps: Joi.string().trim().max(5000).allow('').optional().messages({
+    'string.max': 'Reproduction steps must not exceed 5000 characters.',
+  }),
+  severity: Joi.string()
+    .valid(...Object.values(BUG_SEVERITY))
+    .required()
+    .messages({
+      'any.only': 'Severity must be one of low, medium, high, or critical.',
+      'string.empty': 'Severity is required.',
+      'any.required': 'Severity is required.',
+    }),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -143,4 +169,5 @@ module.exports = {
   createProjectSchema,
   updateProjectSchema,
   addMemberSchema,
+  createBugSchema,
 };
