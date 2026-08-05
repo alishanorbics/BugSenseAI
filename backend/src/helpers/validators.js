@@ -91,10 +91,56 @@ const resetPasswordSchema = Joi.object({
   }),
 });
 
+const createProjectSchema = Joi.object({
+  name: Joi.string().trim().min(2).max(150).required().messages({
+    'string.empty': 'Project name is required.',
+    'string.min': 'Project name must be at least 2 characters long.',
+    'string.max': 'Project name must not exceed 150 characters.',
+    'any.required': 'Project name is required.',
+  }),
+  description: Joi.string().trim().max(2000).allow('').optional().messages({
+    'string.max': 'Description must not exceed 2000 characters.',
+  }),
+});
+
+const updateProjectSchema = Joi.object({
+  name: Joi.string().trim().min(2).max(150).messages({
+    'string.empty': 'Project name cannot be empty.',
+    'string.min': 'Project name must be at least 2 characters long.',
+    'string.max': 'Project name must not exceed 150 characters.',
+  }),
+  description: Joi.string().trim().max(2000).allow('').messages({
+    'string.max': 'Description must not exceed 2000 characters.',
+  }),
+})
+  .min(1)
+  .messages({
+    'object.min': 'At least one field must be provided to update.',
+  });
+
+const addMemberSchema = Joi.object({
+  email: Joi.string().trim().lowercase().email().required().messages({
+    'string.empty': 'Email is required.',
+    'string.email': 'Email must be a valid email address.',
+    'any.required': 'Email is required.',
+  }),
+  role: Joi.string()
+    .valid(...Object.values(ROLES))
+    .required()
+    .messages({
+      'any.only': 'Role must be either qa_engineer or developer.',
+      'string.empty': 'Role is required.',
+      'any.required': 'Role is required.',
+    }),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
   requestResetSchema,
   verifyCodeSchema,
   resetPasswordSchema,
+  createProjectSchema,
+  updateProjectSchema,
+  addMemberSchema,
 };
