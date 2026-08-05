@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(ROLES),
       required: true,
     },
+    profile_photo: {
+      type: String,
+      default: null,
+    },
     reset_code_hash: {
       type: String,
       select: false,

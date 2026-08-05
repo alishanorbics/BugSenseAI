@@ -46,6 +46,7 @@ const register = async (req, res, next) => {
           name: user.name,
           email: user.email,
           role: user.role,
+          profile_photo: user.profile_photo,
         },
       },
     });
@@ -112,6 +113,32 @@ const getProfile = async (req, res, next) => {
     });
   } catch (error) {
     logger.error(`Get Profile Error: ${error.message}`);
+    return next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { current_password, new_password } = req.body;
+
+    const user = await User.findById(req.decoded.id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const is_current_password_valid = await user.comparePassword(current_password);
+
+    if (!is_current_password_valid) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+    }
+
+    user.password = new_password;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password changed successfully.' });
+  } catch (error) {
+    logger.error(`Change Password Error: ${error.message}`);
     return next(error);
   }
 };
@@ -192,6 +219,7 @@ module.exports = {
   register,
   login,
   getProfile,
+  changePassword,
   requestPasswordReset,
   verifyResetCode,
   resetPassword,

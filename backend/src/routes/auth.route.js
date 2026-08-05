@@ -8,6 +8,7 @@ const {
   requestResetSchema,
   verifyCodeSchema,
   resetPasswordSchema,
+  changePasswordSchema,
 } = require('../helpers/validators');
 
 const router = express.Router();
@@ -15,6 +16,12 @@ const router = express.Router();
 router.post('/register', validator(registerSchema), authController.register);
 router.post('/login', validator(loginSchema), authController.login);
 router.get('/me', AuthVerifier, authController.getProfile);
+router.post(
+  '/change-password',
+  AuthVerifier,
+  validator(changePasswordSchema),
+  authController.changePassword,
+);
 
 router.post('/forgot-password', validator(requestResetSchema), authController.requestPasswordReset);
 router.post('/verify-reset-code', validator(verifyCodeSchema), authController.verifyResetCode);

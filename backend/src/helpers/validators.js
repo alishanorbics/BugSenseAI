@@ -91,6 +91,23 @@ const resetPasswordSchema = Joi.object({
   }),
 });
 
+const changePasswordSchema = Joi.object({
+  current_password: Joi.string().required().messages({
+    'string.empty': 'Current password is required.',
+    'any.required': 'Current password is required.',
+  }),
+  new_password: Joi.string().min(8).required().messages({
+    'string.empty': 'New password is required.',
+    'string.min': 'New password must be at least 8 characters long.',
+    'any.required': 'New password is required.',
+  }),
+  confirm_new_password: Joi.string().valid(Joi.ref('new_password')).required().messages({
+    'string.empty': 'Confirm new password is required.',
+    'any.only': 'Passwords do not match.',
+    'any.required': 'Confirm new password is required.',
+  }),
+});
+
 const createProjectSchema = Joi.object({
   name: Joi.string().trim().min(2).max(150).required().messages({
     'string.empty': 'Project name is required.',
@@ -192,6 +209,7 @@ module.exports = {
   requestResetSchema,
   verifyCodeSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   createProjectSchema,
   updateProjectSchema,
   addMemberSchema,
